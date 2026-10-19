@@ -69,3 +69,47 @@ def test_mixed_valid_invalid():
     all_valid, errors = validate_actions(actions)
     assert not all_valid
     assert len(errors) == 2  # two invalid: evil and run_code
+
+
+def test_api_engine_resolves_url_with_empty_base():
+    from testing.api_engine import APIEngine
+    # When base_url is empty, _resolve_url must NEVER return a relative path without host
+    engine = APIEngine(base_url="")
+    url = engine._resolve_url("/api/users")
+    assert url.startswith("http://")
+    assert "127.0.0.1:5000/api/users" in url or "localhost:5000/api/users" in url
+
+
+def test_api_engine_resolves_url_without_scheme():
+    from testing.api_engine import APIEngine
+    engine = APIEngine(base_url="localhost:8000")
+    url = engine._resolve_url("/api/items")
+    assert url == "http://localhost:8000/api/items"
+
+
+def test_api_engine_handles_invalid_url_gracefully():
+    from testing.api_engine import APIEngine
+    engine = APIEngine(base_url="")
+    # Purposely malformed URL with invalid characters or no host that raises InvalidURL
+    result = engine.run_api_test({
+        "method": "GET",
+        "endpoint": "http://bad_url:abc",
+        "assertions": [],
+    })
+    # Must NOT raise unhandled requests.exceptions.InvalidURL; must return Fail result dict
+    assert isinstance(result, dict)
+    assert result["result"] == "Fail"
+    assert "Invalid URL" in result["error_message"]
+
+
+def test_api_engine_handles_unreachable_host_gracefully():
+    from testing.api_engine import APIEngine
+    engine = APIEngine(base_url="http://127.0.0.1:59999", timeout=1)
+    result = engine.run_api_test({
+        "method": "GET",
+        "endpoint": "/unreachable",
+        "assertions": [],
+    })
+    assert isinstance(result, dict)
+    assert result["result"] == "Fail"
+    assert len(result["error_message"]) > 0

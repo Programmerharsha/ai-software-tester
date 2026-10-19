@@ -36,7 +36,7 @@ def render():
     with tab_manual:
         st.markdown("### Manual API Test Builder")
 
-        base_url = st.text_input("Base URL", value=project.get("base_url", "http://localhost:5000"),
+        base_url = st.text_input("Base URL", value=project.get("base_url") or "http://localhost:5000",
                                   key="api_base_url")
 
         col_method, col_endpoint = st.columns([1, 3])
@@ -93,7 +93,8 @@ def render():
                 "assertions": assertions,
             }
 
-            engine = APIEngine(base_url=base_url)
+            eff_base = (base_url or "").strip() or project.get("base_url") or "http://localhost:5000"
+            engine = APIEngine(base_url=eff_base)
             with st.spinner(f"Running {method} {endpoint}..."):
                 result = engine.run_api_test(api_test)
 

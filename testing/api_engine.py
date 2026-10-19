@@ -14,14 +14,42 @@ ALLOWED_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE"}
 
 class APIEngine:
     def __init__(self, base_url: str = "", timeout: int = 30):
-        self.base_url = base_url.rstrip("/")
+        base = (base_url or "").strip()
+        if base and not base.startswith(("http://", "https://")):
+            base = f"http://{base}"
+        self.base_url = base.rstrip("/")
         self.timeout = timeout
         self.session = requests.Session()
 
+        # If targeting local demo server, ensure it is active in background
+        try:
+            from demo_app.server import ensure_demo_server_if_local
+            ensure_demo_server_if_local(self.base_url or "http://127.0.0.1:5000")
+        except Exception:
+            pass
+
     def _resolve_url(self, endpoint: str) -> str:
-        if endpoint.startswith("http"):
-            return endpoint
-        return self.base_url + "/" + endpoint.lstrip("/")
+        ep = (endpoint or "").strip()
+        if not ep:
+            ep = "/"
+
+        # If already an absolute URL
+        if ep.startswith(("http://", "https://")):
+            return ep
+
+        # If host-like without scheme e.g. localhost:5000/api
+        if ep.startswith(("localhost:", "127.0.0.1:", "www.")):
+            return f"http://{ep}"
+
+        # Resolve base URL with safe fallback
+        base = self.base_url.strip() if self.base_url else ""
+        if not base:
+            base = "http://127.0.0.1:5000"
+
+        if not base.startswith(("http://", "https://")):
+            base = f"http://{base}"
+
+        return f"{base.rstrip('/')}/{ep.lstrip('/')}"
 
     def _evaluate_assertion(self, assertion: Dict, response: requests.Response,
                             duration_ms: float) -> Tuple[bool, str]:
@@ -112,10 +140,11 @@ class APIEngine:
                 "response_body": "",
             }
 
-        url = self._resolve_url(api_test.get("endpoint", "/"))
-        headers = api_test.get("headers", {})
+        endpoint_val = api_test.get("endpoint") or api_test.get("url") or api_test.get("path") or "/"
+        url = self._resolve_url(endpoint_val)
+        headers = api_test.get("headers", {}) or {}
         body = api_test.get("body", {})
-        assertions = api_test.get("assertions", [])
+        assertions = api_test.get("assertions", []) or []
 
         t_start = time.time()
         response = None
@@ -128,6 +157,26 @@ class APIEngine:
                 timeout=self.timeout,
             )
             duration_ms = (time.time() - t_start) * 1000
+        except requests.exceptions.InvalidURL as e:
+            return {
+                "result": "Fail",
+                "error_message": f"Invalid URL '{url}': {e}",
+                "assertions_passed": [],
+                "assertions_failed": [f"Invalid URL: {e}"],
+                "duration_ms": 0,
+                "status_code": 0,
+                "response_body": "",
+            }
+        except requests.exceptions.MissingSchema as e:
+            return {
+                "result": "Fail",
+                "error_message": f"Missing URL schema for '{url}': {e}",
+                "assertions_passed": [],
+                "assertions_failed": [f"Missing URL schema: {e}"],
+                "duration_ms": 0,
+                "status_code": 0,
+                "response_body": "",
+            }
         except requests.exceptions.Timeout:
             return {
                 "result": "Fail",
@@ -148,6 +197,16 @@ class APIEngine:
                 "status_code": 0,
                 "response_body": "",
             }
+        except Exception as e:
+            return {
+                "result": "Fail",
+                "error_message": f"HTTP request failed: {e}",
+                "assertions_passed": [],
+                "assertions_failed": [f"Request error: {e}"],
+                "duration_ms": int((time.time() - t_start) * 1000),
+                "status_code": 0,
+                "response_body": "",
+            }
 
         passed = []
         failed = []
@@ -159,9 +218,11 @@ class APIEngine:
                 failed.append(msg)
 
         try:
-            response_body = response.text[:2000]
+            response_body = response.text[:2000] if response is not None else ""
         except Exception:
             response_body = ""
+
+        status_code = response.status_code if response is not None else 0
 
         return {
             "result": "Pass" if not failed else "Fail",
@@ -169,7 +230,7 @@ class APIEngine:
             "assertions_passed": passed,
             "assertions_failed": failed,
             "duration_ms": int(duration_ms),
-            "status_code": response.status_code,
+            "status_code": status_code,
             "response_body": response_body,
         }
 
@@ -178,7 +239,7 @@ class APIEngine:
         results = []
         for test in api_tests:
             result = self.run_api_test(test)
-            result["endpoint"] = test.get("endpoint", "")
+            result["endpoint"] = test.get("endpoint") or test.get("url") or ""
             result["method"] = test.get("method", "")
             results.append(result)
         return results

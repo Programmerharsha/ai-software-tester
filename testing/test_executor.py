@@ -55,20 +55,33 @@ def execute_test_case(
             actions_data = {}
 
         if not result.get("error_message"):
+            eff_base_url = (base_url or "").strip() or "http://127.0.0.1:5000"
             if is_api or "api_tests" in actions_data:
                 api_tests = actions_data.get("api_tests", [])
-                engine = APIEngine(base_url=base_url)
-                api_results = engine.run_all(api_tests)
-                failed = [r for r in api_results if r["result"] == "Fail"]
-                if failed:
-                    result["result"] = "Fail"
-                    result["error_message"] = "; ".join(r["error_message"] for r in failed if r["error_message"])
-                    result["failed_step"] = failed[0].get("endpoint", "")
-                    result["actual_result"] = str(failed)
+                if not api_tests:
+                    result["result"] = "Blocked"
+                    result["error_message"] = "Empty API test definitions."
                 else:
-                    result["result"] = "Pass"
-                    result["actual_result"] = "All API assertions passed"
-                result["duration_ms"] = sum(r.get("duration_ms", 0) for r in api_results)
+                    engine = APIEngine(base_url=eff_base_url)
+                    try:
+                        api_results = engine.run_all(api_tests)
+                    except Exception as exc:
+                        api_results = [{
+                            "result": "Fail",
+                            "error_message": f"API execution failed: {exc}",
+                            "endpoint": api_tests[0].get("endpoint", "") if api_tests else "",
+                            "duration_ms": 0,
+                        }]
+                    failed = [r for r in api_results if r["result"] == "Fail"]
+                    if failed:
+                        result["result"] = "Fail"
+                        result["error_message"] = "; ".join(r["error_message"] for r in failed if r["error_message"])
+                        result["failed_step"] = failed[0].get("endpoint", "")
+                        result["actual_result"] = str(failed)
+                    else:
+                        result["result"] = "Pass"
+                        result["actual_result"] = "All API assertions passed"
+                    result["duration_ms"] = sum(r.get("duration_ms", 0) for r in api_results)
             else:
                 actions = actions_data.get("actions", [])
                 if not actions:
@@ -76,7 +89,12 @@ def execute_test_case(
                     result["error_message"] = "Empty actions list."
                 else:
                     engine = PlaywrightEngine(browser_type=browser, headless=headless)
-                    result = engine.run_test(actions, base_url=base_url)
+                    try:
+                        result = engine.run_test(actions, base_url=eff_base_url)
+                    except Exception as pw_err:
+                        result["result"] = "Fail"
+                        result["error_message"] = f"Execution engine error: {pw_err}"
+                        result["actual_result"] = str(pw_err)
 
     # Save result to DB
     result_id = db.save_execution_result(

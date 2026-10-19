@@ -60,7 +60,7 @@ def render():
             exec_name = st.text_input("Execution Name", value=f"Run_{int(time.time())}")
             browser = st.selectbox("Browser", ["chromium", "firefox", "webkit"])
         with c2:
-            base_url = st.text_input("Base URL", value=project.get("base_url", "http://localhost:5000"))
+            base_url = st.text_input("Base URL", value=project.get("base_url") or "http://localhost:5000")
             headless = st.checkbox("Headless Mode", value=True)
 
         # Test case selection
@@ -161,7 +161,8 @@ def render():
                     )
 
                     from testing.test_executor import execute_test_case
-                    result = execute_test_case(tc, exec_id, base_url, browser, headless)
+                    eff_base = (base_url or "").strip() or project.get("base_url") or "http://localhost:5000"
+                    result = execute_test_case(tc, exec_id, eff_base, browser, headless)
                     all_results.append({"tc_id": tc["tc_id"], "scenario": tc["scenario"], **result})
 
                     progress_bar.progress((i + 1) / total)
