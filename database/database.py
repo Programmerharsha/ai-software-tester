@@ -36,11 +36,147 @@ def db_cursor():
 
 
 def init_db():
-    """Create all tables if they do not exist."""
+    """Create all tables if they do not exist and seed initial demo project if empty."""
     conn = get_connection()
     conn.executescript(SCHEMA_SQL)
     conn.commit()
     conn.close()
+    seed_demo_data(force=False)
+
+
+def seed_demo_data(force: bool = False) -> Optional[int]:
+    """Seed a realistic starter project if database is empty or force=True."""
+    count_row = fetch_one("SELECT count(*) as cnt FROM projects")
+    if not force and count_row and count_row["cnt"] > 0:
+        return None
+
+    pid = create_project(
+        name="Demo E-Commerce & Auth Project",
+        description="Live sample target featuring authentication, API endpoints, and seeded QA edge cases.",
+        base_url="http://127.0.0.1:5000",
+    )
+
+    # Requirements
+    r1 = create_requirement(
+        project_id=pid,
+        req_id="REQ001",
+        title="User Authentication & Login",
+        description="The system must authenticate registered users using email and password, redirecting to /dashboard. Incorrect credentials must produce an inline error alert.",
+        priority="High",
+    )
+    r2 = create_requirement(
+        project_id=pid,
+        req_id="REQ002",
+        title="User Registration & Validation",
+        description="Allows new users to create an account. Passwords and confirmation passwords must match. Duplicate email registrations must be prevented.",
+        priority="Medium",
+    )
+
+    # Test Case 1: Valid Login
+    tc1_actions = json.dumps({
+        "actions": [
+            {"type": "navigate", "url": "/login"},
+            {"type": "fill", "selector": "input[name='email'], #email", "value": "test@example.com"},
+            {"type": "fill", "selector": "input[name='password'], #password", "value": "Test123!"},
+            {"type": "click", "selector": "button[type='submit'], #login"},
+            {"type": "wait", "ms": 500},
+            {"type": "assert_url", "expected_url": "/dashboard"},
+            {"type": "screenshot", "label": "login_redirect"}
+        ]
+    })
+    tc1 = create_test_case(
+        project_id=pid,
+        requirement_id=r1,
+        tc_id="TC001",
+        scenario="Valid User Login and Dashboard Redirection",
+        description="Verify registered user with valid password is authenticated and directed to /dashboard.",
+        test_type="Functional",
+        preconditions="Registered user account test@example.com exists.",
+        test_data=json.dumps({"email": "test@example.com", "password": "Test123!"}),
+        expected_result="User successfully redirected to /dashboard.",
+        priority="High",
+        severity="Critical",
+        automation="Automated",
+        actions_json=tc1_actions,
+        created_by="AI",
+    )
+    add_test_steps(tc1, [
+        {"action": "Navigate to /login", "expected": "Login page loaded"},
+        {"action": "Enter registered email and password", "expected": "Fields populated"},
+        {"action": "Click Login button", "expected": "Redirects to /dashboard"},
+    ])
+
+    # Test Case 2: Invalid Password
+    tc2_actions = json.dumps({
+        "actions": [
+            {"type": "navigate", "url": "/login"},
+            {"type": "fill", "selector": "input[name='email'], #email", "value": "test@example.com"},
+            {"type": "fill", "selector": "input[name='password'], #password", "value": "WrongPassword99!"},
+            {"type": "click", "selector": "button[type='submit'], #login"},
+            {"type": "wait", "ms": 500},
+            {"type": "assert_visible", "selector": ".error, .alert-danger"},
+            {"type": "screenshot", "label": "invalid_credentials"}
+        ]
+    })
+    tc2 = create_test_case(
+        project_id=pid,
+        requirement_id=r1,
+        tc_id="TC002",
+        scenario="Invalid Password Submission",
+        description="Verify appropriate error message appears when wrong password is used.",
+        test_type="Functional",
+        preconditions="Registered user account test@example.com exists.",
+        test_data=json.dumps({"email": "test@example.com", "password": "WrongPassword99!"}),
+        expected_result="Error message 'Invalid email or password' displayed.",
+        priority="High",
+        severity="High",
+        automation="Automated",
+        actions_json=tc2_actions,
+        created_by="AI",
+    )
+    add_test_steps(tc2, [
+        {"action": "Navigate to /login", "expected": "Login page loaded"},
+        {"action": "Enter email and incorrect password", "expected": "Fields populated"},
+        {"action": "Click Login button", "expected": "Error message displayed"},
+    ])
+
+    # Test Case 3: API Login
+    tc3_actions = json.dumps({
+        "api_tests": [
+            {
+                "method": "POST",
+                "endpoint": "/api/login",
+                "headers": {"Content-Type": "application/json"},
+                "body": {"email": "test@example.com", "password": "Test123!"},
+                "assertions": [
+                    {"type": "status", "operator": "eq", "expected": 200},
+                    {"type": "json_field", "path": "status", "operator": "eq", "expected": "success"},
+                    {"type": "response_time", "max_ms": 2000}
+                ]
+            }
+        ]
+    })
+    tc3 = create_test_case(
+        project_id=pid,
+        requirement_id=r1,
+        tc_id="TC003",
+        scenario="REST API Authentication Endpoint",
+        description="Verify /api/login endpoint returns 200 and success status for valid JSON payload.",
+        test_type="API",
+        preconditions="API service running.",
+        test_data=json.dumps({"email": "test@example.com", "password": "Test123!"}),
+        expected_result="HTTP status 200 with status=success JSON response.",
+        priority="High",
+        severity="High",
+        automation="Automated",
+        actions_json=tc3_actions,
+        created_by="AI",
+    )
+    add_test_steps(tc3, [
+        {"action": "Send POST /api/login with valid credentials", "expected": "HTTP 200 and success status"},
+    ])
+
+    return pid
 
 
 # ─────────────────────────────── Generic helpers ──────────────────────────────

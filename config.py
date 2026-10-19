@@ -15,9 +15,37 @@ REPORTS_DIR = BASE_DIR / "reports"
 SCREENSHOTS_DIR.mkdir(exist_ok=True)
 REPORTS_DIR.mkdir(exist_ok=True)
 
+# ── Helper for Streamlit Secrets / Env ─────────────────────────────────────────
+def get_config_val(key: str, default: str = "") -> str:
+    """Read configuration value safely from Streamlit secrets or environment variables."""
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets") and key in st.secrets:
+            val = st.secrets.get(key)
+            if val is not None:
+                return str(val).strip()
+    except Exception:
+        pass
+    return os.environ.get(key, default)
+
+
+# ── AI Providers Configuration ────────────────────────────────────────────────
+# Supported providers: "gemini" | "groq" | "openai" | "ollama" | "demo"
+AI_PROVIDER = get_config_val("AI_PROVIDER", "auto")
+
+GEMINI_API_KEY = get_config_val("GEMINI_API_KEY", "")
+DEFAULT_GEMINI_MODEL = get_config_val("GEMINI_MODEL", "gemini-1.5-flash")
+
+GROQ_API_KEY = get_config_val("GROQ_API_KEY", "")
+DEFAULT_GROQ_MODEL = get_config_val("GROQ_MODEL", "llama-3.3-70b-versatile")
+
+OPENAI_API_KEY = get_config_val("OPENAI_API_KEY", "")
+DEFAULT_OPENAI_MODEL = get_config_val("OPENAI_MODEL", "gpt-4o-mini")
+DEFAULT_OPENAI_BASE_URL = get_config_val("OPENAI_BASE_URL", "https://api.openai.com/v1")
+
 # ── Ollama / AI ────────────────────────────────────────────────────────────────
-OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-MODEL_NAME = os.environ.get("AI_MODEL", "qwen2.5-coder:7b")   # NEVER change silently
+OLLAMA_URL = get_config_val("OLLAMA_URL", "http://localhost:11434")
+MODEL_NAME = get_config_val("AI_MODEL", "qwen2.5-coder:7b")   # NEVER change silently
 
 AI_TEMPERATURE = 0.2
 AI_NUM_CTX = 8192

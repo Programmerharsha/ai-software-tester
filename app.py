@@ -343,6 +343,9 @@ def render_ai_status_card() -> None:
     last_checked = st.session_state.ai_status_last_checked
     checked_str = last_checked.strftime("%H:%M:%S") if last_checked else "—"
 
+    provider_name = status.get("provider_display", "AI Testing Engine")
+    provider = status.get("provider", "ollama")
+
     if status.get("ready"):
         st.markdown(
             f"""
@@ -353,10 +356,10 @@ def render_ai_status_card() -> None:
                 </div>
                 <div style="font-size:0.7rem; color:#9ca3af;">as of {checked_str}</div>
               </div>
-              <div>Ollama Connected</div>
-              <div>{status.get("model_msg", "Model available")}</div>
+              <div style="font-weight:600; color:#e8eaf6;">{provider_name}</div>
+              <div style="font-size:0.8rem; color:#9ca3af;">{status.get("model_msg", "Model ready")}</div>
               <div style="margin-top:8px; font-size:0.75rem; color:#a78bfa; font-weight:600;">
-                AI Testing Engine: READY
+                AI Engine: READY
               </div>
             </div>
             """,
@@ -364,21 +367,27 @@ def render_ai_status_card() -> None:
         )
         return
 
-    ollama_line = (
-        f'<div>{status.get("ollama_msg", "")}</div>'
-        if not status.get("ollama")
-        else "<div>✅ Ollama Connected</div>"
-    )
-    model_line = (
-        f'<div>{status.get("model_msg", "")}</div>'
-        if not status.get("model")
-        else "<div>✅ Model Available</div>"
-    )
-    recovery_hint = (
-        "Start Ollama by running: <code>ollama serve</code>"
-        if not status.get("ollama")
-        else f"Run: <code>ollama pull {status.get('configured_model', MODEL_NAME)}</code>"
-    )
+    if provider == "ollama":
+        engine_line = (
+            f'<div>{status.get("ollama_msg", "")}</div>'
+            if not status.get("ollama")
+            else "<div>✅ Ollama Connected</div>"
+        )
+        model_line = (
+            f'<div>{status.get("model_msg", "")}</div>'
+            if not status.get("model")
+            else "<div>✅ Model Available</div>"
+        )
+        recovery_hint = (
+            "Start Ollama by running: <code>ollama serve</code>"
+            if not status.get("ollama")
+            else f"Run: <code>ollama pull {status.get('configured_model', MODEL_NAME)}</code>"
+        )
+    else:
+        engine_line = f'<div>{provider_name}</div>'
+        model_line = f'<div>{status.get("ollama_msg", "API Key Required")}</div>'
+        recovery_hint = "Configure your API key in <b>Settings &rarr; AI Provider</b> or switch to Demo Mode."
+
     st.markdown(
         f"""
         <div class="ai-status-card-error">
@@ -388,7 +397,7 @@ def render_ai_status_card() -> None:
             </div>
             <div style="font-size:0.7rem; color:#9ca3af;">as of {checked_str}</div>
           </div>
-          {ollama_line}
+          {engine_line}
           {model_line}
           <div style="margin-top:8px; font-size:0.75rem; color:#ff5370;">
             {recovery_hint}
@@ -421,7 +430,7 @@ def render_sidebar() -> None:
         status_col, toggle_col = st.columns([2, 1])
         with status_col:
             if st.button("Check AI Status", use_container_width=True):
-                with st.spinner("Checking Ollama..."):
+                with st.spinner("Checking AI Engine..."):
                     _refresh_ai_status()
         with toggle_col:
             st.session_state.auto_refresh_ai = st.toggle(

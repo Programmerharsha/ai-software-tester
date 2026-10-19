@@ -162,18 +162,92 @@ def check_model_available(model: Optional[str] = None) -> Tuple[bool, str]:
 
 
 def get_ai_status() -> Dict:
-    ok_ollama, msg_ollama = check_ollama_running()
-    if not ok_ollama:
-        return {"ollama": False, "model": False, "ollama_msg": msg_ollama, "model_msg": ""}
-    ok_model, msg_model = check_model_available()
-    return {
-        "ollama": ok_ollama,
-        "model": ok_model,
-        "ollama_msg": msg_ollama,
-        "model_msg": msg_model,
-        "configured_model": _configured_model(),
-        "ready": ok_ollama and ok_model,
-    }
+    from ai import providers
+    provider = providers.get_active_provider()
+
+    if provider == "ollama":
+        ok_ollama, msg_ollama = check_ollama_running()
+        if not ok_ollama:
+            return {
+                "ollama": False,
+                "model": False,
+                "ollama_msg": msg_ollama,
+                "model_msg": "",
+                "provider": "ollama",
+                "provider_display": providers.PROVIDER_DISPLAY_NAMES.get("ollama", "Ollama"),
+                "ready": False,
+            }
+        ok_model, msg_model = check_model_available()
+        return {
+            "ollama": ok_ollama,
+            "model": ok_model,
+            "ollama_msg": msg_ollama,
+            "model_msg": msg_model,
+            "configured_model": _configured_model(),
+            "provider": "ollama",
+            "provider_display": providers.PROVIDER_DISPLAY_NAMES.get("ollama", "Ollama"),
+            "ready": ok_ollama and ok_model,
+        }
+
+    elif provider == "gemini":
+        key = providers.get_provider_api_key("gemini")
+        model = providers.get_provider_model("gemini")
+        ready = bool(key)
+        return {
+            "ollama": True,
+            "model": ready,
+            "ollama_msg": "Google Gemini Cloud Active" if ready else "API Key missing",
+            "model_msg": f"Model: {model}",
+            "configured_model": model,
+            "provider": "gemini",
+            "provider_display": providers.PROVIDER_DISPLAY_NAMES.get("gemini", "Google Gemini"),
+            "ready": ready,
+            "key_configured": bool(key),
+        }
+
+    elif provider == "groq":
+        key = providers.get_provider_api_key("groq")
+        model = providers.get_provider_model("groq")
+        ready = bool(key)
+        return {
+            "ollama": True,
+            "model": ready,
+            "ollama_msg": "Groq Cloud Inference Active" if ready else "API Key missing",
+            "model_msg": f"Model: {model}",
+            "configured_model": model,
+            "provider": "groq",
+            "provider_display": providers.PROVIDER_DISPLAY_NAMES.get("groq", "Groq Cloud"),
+            "ready": ready,
+            "key_configured": bool(key),
+        }
+
+    elif provider == "openai":
+        key = providers.get_provider_api_key("openai")
+        model = providers.get_provider_model("openai")
+        ready = bool(key)
+        return {
+            "ollama": True,
+            "model": ready,
+            "ollama_msg": "OpenAI / Custom Endpoint Active" if ready else "API Key missing",
+            "model_msg": f"Model: {model}",
+            "configured_model": model,
+            "provider": "openai",
+            "provider_display": providers.PROVIDER_DISPLAY_NAMES.get("openai", "OpenAI / Custom"),
+            "ready": ready,
+            "key_configured": bool(key),
+        }
+
+    else:  # "demo" mode
+        return {
+            "ollama": True,
+            "model": True,
+            "ollama_msg": "Built-in Smart Heuristic Engine (Offline / Demo)",
+            "model_msg": "Instant In-Memory AI Synthesis (No API Key Required)",
+            "configured_model": "smart-heuristic-v1",
+            "provider": "demo",
+            "provider_display": providers.PROVIDER_DISPLAY_NAMES.get("demo", "Smart Demo Engine"),
+            "ready": True,
+        }
 
 
 # ── Chat completion ───────────────────────────────────────────────────────────
@@ -186,6 +260,19 @@ def chat(
     stream: bool = False,
 ) -> str:
     """Send a chat message and return the full response string."""
+    from ai import providers
+    provider = providers.get_active_provider()
+
+    # Route cloud and demo providers to provider engine
+    if provider != "ollama":
+        return providers.chat_provider(
+            prompt=prompt,
+            system=system,
+            model=model,
+            temperature=temperature,
+        )
+
+    # Local / remote Ollama execution
     messages = []
     if system:
         messages.append({"role": "system", "content": system})
@@ -214,7 +301,7 @@ def chat(
     except requests.Timeout:
         raise RuntimeError(f"Ollama request timed out after {AI_TIMEOUT}s")
     except requests.ConnectionError:
-        raise RuntimeError("Cannot reach Ollama. Make sure it is running.")
+        raise RuntimeError("Cannot reach Ollama. Make sure it is running or switch to Cloud / Demo AI in Settings.")
     except requests.HTTPError as e:
         raise RuntimeError(f"Ollama HTTP error: {e}")
 
@@ -234,6 +321,15 @@ def chat(
 
 def chat_stream(prompt: str, system: str = "", model: Optional[str] = None) -> Generator[str, None, None]:
     """Streaming version — yields content chunks."""
+    from ai import providers
+    provider = providers.get_active_provider()
+
+    if provider != "ollama":
+        # Yield the generated text as a single or small chunks
+        full_res = providers.chat_provider(prompt=prompt, system=system, model=model)
+        yield full_res
+        return
+
     messages = []
     if system:
         messages.append({"role": "system", "content": system})

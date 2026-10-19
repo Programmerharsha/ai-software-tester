@@ -5,11 +5,12 @@ __pycache__/
 *.pyo
 .Python
 
-# Environments
+# Environments & Secrets
 venv/
 .venv/
 env/
 .env
+.streamlit/secrets.toml
 
 # Database (keep schema, not data)
 ai_tester.db

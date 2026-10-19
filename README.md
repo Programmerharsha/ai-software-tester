@@ -1,11 +1,16 @@
 # 🤖 AI Software Tester
 
-A complete **AI-Powered Software Testing Application** using:
-- **Python** + **Streamlit** (UI)
-- **Qwen2.5-Coder 7B** via **Ollama** (AI engine)
-- **Playwright** (browser automation)
-- **requests** (API testing)
-- **SQLite** (database)
+A complete **AI-Powered Software Testing Application** supporting both local and cloud deployment:
+- **Python** + **Streamlit** (Modern dark-mode UI)
+- **Multi-Provider AI Engine**:
+  - ⚡ **Google Gemini** (Free cloud tier via Google AI Studio)
+  - 🚀 **Groq Cloud** (Ultra-fast cloud inference)
+  - 🧠 **OpenAI / DeepSeek / OpenRouter** (OpenAI-compatible endpoints)
+  - 🦙 **Ollama** (Local or remote Qwen2.5-Coder / DeepSeek)
+  - ✨ **Built-in Smart Demo Engine** (Instant, zero-setup offline/demo mode)
+- **Playwright** (Browser automation with automated installation and cloud container simulation)
+- **requests** (REST API testing engine)
+- **SQLite** (Self-contained relational storage)
 
 ---
 
@@ -13,58 +18,52 @@ A complete **AI-Powered Software Testing Application** using:
 
 | Feature | Description |
 |---------|-------------|
-| 🔍 Requirement Analysis | Qwen analyzes requirements to extract functional specs, edge cases, risks |
+| 🔍 Requirement Analysis | AI analyzes requirements to extract functional specs, edge cases, risks |
 | 🧪 AI Test Generation | Generates comprehensive positive/negative/boundary/security test cases |
 | ⚙️ Test Automation | Converts test cases to validated Playwright/API actions |
 | 🛡️ Safe Execution | All AI-generated actions validated against strict allowlist before execution |
 | 📸 Failure Capture | Screenshots, error messages, and context captured on failure |
-| 🔬 AI Failure Analysis | Qwen classifies failures and suggests root causes |
-| 🐛 Bug Reports | AI-generated professional bug reports, editable before saving |
-| 📊 Dashboard | Live KPI metrics, Plotly charts, traceability matrix |
-| 📋 Reports | HTML/CSV/PDF export |
+| 🔬 AI Failure Analysis | AI classifies failures and diagnoses root causes |
+| 🐛 Bug Reports | AI-generated professional bug reports with one-click export |
+| 📊 Dashboard | Live KPI metrics, interactive Plotly charts, traceability matrix |
+| 📋 Reports | HTML, CSV, and formatted print/PDF exports |
 
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-1. Python 3.10+
-2. [Ollama](https://ollama.com/) installed and running
-3. Qwen2.5-Coder 7B model
+### Option A — Run Locally
 
-### Step 1 — Install Qwen model
+#### 1. Clone & Setup Virtual Environment
 ```bash
-ollama pull qwen2.5-coder:7b
-```
-
-### Step 2 — Create virtualenv
-```bash
+git clone https://github.com/Programmerharsha/ai-software-tester.git
+cd ai-software-tester
 python -m venv venv
 venv\Scripts\activate      # Windows
 # or: source venv/bin/activate  (Linux/Mac)
 ```
 
-### Step 3 — Install dependencies
+#### 2. Install Dependencies & Browser
 ```bash
 pip install -r requirements.txt
-playwright install
+playwright install chromium
 ```
 
-### Step 4 — (Optional) Start Demo App
-In a separate terminal:
-```bash
-cd demo_app
-pip install flask
-python app.py
-# Runs at http://localhost:5000
-```
-
-### Step 5 — Run the app
+#### 3. Run the Streamlit App
 ```bash
 streamlit run app.py
 ```
+*The app runs at `http://localhost:8501`. Choose your preferred AI provider in **Settings** (Gemini, Groq, Ollama, or Smart Demo).*
 
-Opens at `http://localhost:8501`
+---
+
+### Option B — Deploy to Streamlit Community Cloud (Free)
+
+1. Push your repository to GitHub.
+2. Go to **[share.streamlit.io](https://share.streamlit.io/)** and connect your GitHub repo.
+3. Set the main file path to `app.py`.
+4. In **App Settings &rarr; Secrets**, configure your free Gemini or Groq key (see `.streamlit/secrets.toml.example`).
+5. Click **Deploy**! (Everything works automatically with Linux dependencies in `packages.txt`).
 
 ---
 
