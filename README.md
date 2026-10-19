@@ -1,36 +1,36 @@
-# 🤖 AI Software Tester
+#  AI Software Tester
 
 A complete **AI-Powered Software Testing Application** supporting both local and cloud deployment:
 - **Python** + **Streamlit** (Modern dark-mode UI)
 - **Multi-Provider AI Engine**:
-  - ⚡ **Google Gemini** (Free cloud tier via Google AI Studio)
-  - 🚀 **Groq Cloud** (Ultra-fast cloud inference)
-  - 🧠 **OpenAI / DeepSeek / OpenRouter** (OpenAI-compatible endpoints)
-  - 🦙 **Ollama** (Local or remote Qwen2.5-Coder / DeepSeek)
-  - ✨ **Built-in Smart Demo Engine** (Instant, zero-setup offline/demo mode)
+  - **Google Gemini** (Free cloud tier via Google AI Studio)
+  - **Groq Cloud** (Ultra-fast cloud inference)
+  - **OpenAI / DeepSeek / OpenRouter** (OpenAI-compatible endpoints)
+  - **Ollama** (Local or remote Qwen2.5-Coder / DeepSeek)
+  - **Built-in Smart Demo Engine** (Instant, zero-setup offline/demo mode)
 - **Playwright** (Browser automation with automated installation and cloud container simulation)
 - **requests** (REST API testing engine)
 - **SQLite** (Self-contained relational storage)
 
 ---
 
-## ✨ Features
+## Features
 
 | Feature | Description |
 |---------|-------------|
-| 🔍 Requirement Analysis | AI analyzes requirements to extract functional specs, edge cases, risks |
-| 🧪 AI Test Generation | Generates comprehensive positive/negative/boundary/security test cases |
-| ⚙️ Test Automation | Converts test cases to validated Playwright/API actions |
-| 🛡️ Safe Execution | All AI-generated actions validated against strict allowlist before execution |
-| 📸 Failure Capture | Screenshots, error messages, and context captured on failure |
-| 🔬 AI Failure Analysis | AI classifies failures and diagnoses root causes |
-| 🐛 Bug Reports | AI-generated professional bug reports with one-click export |
-| 📊 Dashboard | Live KPI metrics, interactive Plotly charts, traceability matrix |
-| 📋 Reports | HTML, CSV, and formatted print/PDF exports |
+|  Requirement Analysis | AI analyzes requirements to extract functional specs, edge cases, risks |
+|  AI Test Generation | Generates comprehensive positive/negative/boundary/security test cases |
+|  Test Automation | Converts test cases to validated Playwright/API actions |
+|  Safe Execution | All AI-generated actions validated against strict allowlist before execution |
+|  Failure Capture | Screenshots, error messages, and context captured on failure |
+|  AI Failure Analysis | AI classifies failures and diagnoses root causes |
+|  Bug Reports | AI-generated professional bug reports with one-click export |
+|  Dashboard | Live KPI metrics, interactive Plotly charts, traceability matrix |
+|  Reports | HTML, CSV, and formatted print/PDF exports |
 
 ---
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Option A — Run Locally
 
@@ -67,7 +67,7 @@ streamlit run app.py
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 ai_software_tester/
@@ -122,7 +122,7 @@ ai_software_tester/
 
 ---
 
-## 🔒 Security Model
+##  Security Model
 
 The AI **never executes arbitrary code**. Qwen generates structured JSON actions:
 
@@ -145,7 +145,7 @@ Any other action type is **rejected before execution**.
 
 ---
 
-## 🤖 AI Configuration
+##  AI Configuration
 
 Central config in `config.py`:
 ```python
@@ -157,7 +157,7 @@ The model is **never silently switched**. All settings are configurable from the
 
 ---
 
-## 🏗️ E2E Workflow
+##  E2E Workflow
 
 ```
 Create Project → Add Requirement → Analyze with Qwen
@@ -169,7 +169,7 @@ Create Project → Add Requirement → Analyze with Qwen
 
 ---
 
-## 🧪 Running Unit Tests
+##  Running Unit Tests
 
 ```bash
 cd ai_software_tester
@@ -178,7 +178,7 @@ pytest tests/ -v
 
 ---
 
-## 📝 Demo App Intentional Bugs
+##  Demo App Intentional Bugs
 
 See `demo_app/BUGS.md` for documentation of 4 intentional bugs:
 - BUG-001: Wrong redirect after login
@@ -190,7 +190,7 @@ These bugs are intentional so the testing tool can demonstrate real failure dete
 
 ---
 
-## ⚙️ Settings
+##  Settings
 
 Configurable from the Settings page (stored in SQLite):
 
